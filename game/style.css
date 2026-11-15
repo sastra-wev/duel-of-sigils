@@ -1,0 +1,166 @@
+/* Duel of Sigils — a lamplit duelling table at midnight.
+   Palette: deep indigo felt, parchment cards, candle gold, ember red.
+   Type: Georgia for ceremony, system sans for the numbers that matter. */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: radial-gradient(1200px 700px at 50% 30%, #2a2142 0%, #171226 55%, #0d0a18 100%);
+  color: #efe7d3;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 18px;
+}
+
+#app { max-width: 1180px; margin: 0 auto; padding: 18px 20px 30px; }
+
+.screen { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+
+h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 54px; letter-spacing: 3px; margin: 4px 0 0;
+  color: #e8c268; text-align: center; text-shadow: 0 2px 18px rgba(232, 194, 104, .35);
+}
+
+.tagline { font-size: 20px; color: #cfc4a6; text-align: center; margin: 0; max-width: 720px; }
+.hint { font-size: 15px; color: #9a8fb5; text-align: center; }
+
+.big-btn {
+  font-family: Georgia, serif; font-size: 22px; letter-spacing: 1px;
+  background: linear-gradient(180deg, #d9ab3c, #a97c1c); color: #221806;
+  border: 2px solid #f0d48a; border-radius: 10px; padding: 13px 34px;
+  cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,.5);
+}
+.big-btn:hover { filter: brightness(1.1); }
+.big-btn:disabled { filter: grayscale(.7) brightness(.6); cursor: default; }
+
+/* ---------- title ---------- */
+.title-screen { padding-top: 40px; }
+.title-sigil { filter: drop-shadow(0 0 22px rgba(232,194,104,.45)); }
+.howto {
+  background: rgba(255, 244, 214, .06); border: 1px solid rgba(232,194,104,.35);
+  border-radius: 12px; padding: 16px 26px; max-width: 640px;
+}
+.howto p { margin: 7px 0; font-size: 18px; color: #e6dcc2; }
+
+/* ---------- battle ---------- */
+.topbar {
+  width: 100%; display: flex; justify-content: space-between; align-items: center;
+  font-family: Georgia, serif; letter-spacing: 2px; color: #cdbf9d; font-size: 17px;
+}
+.mute-btn { background: none; border: none; font-size: 22px; cursor: pointer; }
+
+.arena { display: flex; align-items: flex-start; justify-content: center; gap: 34px; width: 100%; }
+.foe-zone, .player-zone { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 400px; }
+.versus { font-size: 34px; padding-top: 120px; color: #8d86a8; }
+
+.intent {
+  background: #3d1520; border: 1px solid #a04050; color: #ffd9d9;
+  border-radius: 999px; padding: 7px 18px; font-size: 17px;
+}
+.intent b { color: #ffb3b3; }
+
+.foe-sigil {
+  position: relative; width: 190px; height: 190px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 42%, rgba(255,255,255,.10), rgba(0,0,0,.35) 70%);
+  border: 3px solid var(--tint, #888);
+  box-shadow: 0 0 34px -4px var(--tint, #888), inset 0 0 26px rgba(0,0,0,.55);
+}
+.foe-name, .player-name { font-family: Georgia, serif; font-size: 27px; margin: 2px 0 0; color: #f3ead2; }
+
+.hpbar {
+  position: relative; width: 320px; height: 26px; border-radius: 7px;
+  background: #241a18; border: 1px solid #6b5a44; overflow: hidden;
+}
+.hpbar .hpfill { height: 100%; transition: width .45s ease; }
+.hpbar.foe .hpfill { background: linear-gradient(180deg, #c84a3a, #8e2418); }
+.hpbar.player .hpfill { background: linear-gradient(180deg, #4fae62, #2c6e3e); }
+.hpbar span {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 15px; color: #fff; text-shadow: 0 1px 3px #000;
+}
+
+.chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; min-height: 26px; }
+.chip { font-size: 14px; border-radius: 999px; padding: 3px 11px; border: 1px solid; }
+.chip.block { color: #bcd8ff; border-color: #5b84c4; background: rgba(51,98,158,.25); }
+.chip.buff { color: #ffd9a8; border-color: #c48a3d; background: rgba(196,138,61,.2); }
+.chip.thorns { color: #c2f0c2; border-color: #5da45d; background: rgba(93,164,93,.2); }
+.chip.vuln { color: #f3c2ff; border-color: #9a5dc4; background: rgba(154,93,196,.22); }
+.chip.weak { color: #d5d5d5; border-color: #888; background: rgba(140,140,140,.2); }
+
+.energy { font-size: 21px; color: #ffe9a8; }
+.piles { font-size: 15px; color: #9a8fb5; }
+
+.float {
+  position: absolute; top: 34%; left: 50%; transform: translateX(-50%);
+  font-family: Georgia, serif; font-size: 40px; font-weight: 700;
+  pointer-events: none; animation: floatUp 1.15s ease-out forwards;
+  text-shadow: 0 2px 8px #000;
+}
+.float.bad { color: #ff7a66; }
+.float.good { color: #8fe89a; }
+.float.player { left: 12%; }
+@keyframes floatUp {
+  from { opacity: 0; margin-top: 12px; }
+  25% { opacity: 1; }
+  to { opacity: 0; margin-top: -38px; }
+}
+
+/* ---------- cards ---------- */
+.hand-row, .draft-row {
+  display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; min-height: 218px;
+}
+.card {
+  position: relative; width: 158px; height: 216px; padding: 30px 12px 26px;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  background: linear-gradient(180deg, #f6edd4, #e7d9b4);
+  color: #2b2118; border: 3px solid #b08d3e; border-radius: 12px;
+  font-family: inherit; text-align: center; cursor: pointer;
+  box-shadow: 0 6px 14px rgba(0,0,0,.45);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.card::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 22px;
+  border-radius: 9px 9px 0 0;
+}
+.card.kind-attack::before { background: #b0402a; }
+.card.kind-skill::before { background: #33629e; }
+.card.kind-hex::before { background: #6d3fa0; }
+.card.playable:hover { transform: translateY(-10px); box-shadow: 0 14px 22px rgba(0,0,0,.55); }
+.card.unplayable { filter: saturate(.45) brightness(.82); cursor: default; }
+.card .cost {
+  position: absolute; top: -10px; left: -10px; width: 38px; height: 38px;
+  background: radial-gradient(circle at 35% 30%, #ffe9a8, #c9962a);
+  border: 2px solid #7a5a14; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 800; color: #33240a; z-index: 2;
+}
+.card .glyph { margin-top: 4px; }
+.card.kind-attack .glyph { color: #b0402a; }
+.card.kind-skill .glyph { color: #33629e; }
+.card.kind-hex .glyph { color: #6d3fa0; }
+.card .cname { font-family: Georgia, serif; font-weight: 700; font-size: 17px; line-height: 1.15; }
+.card .ctext { font-size: 13.5px; line-height: 1.3; color: #4a3a26; }
+.card .ckind {
+  position: absolute; bottom: 7px; font-size: 11px; letter-spacing: 2.5px;
+  text-transform: uppercase; color: #8a6d35;
+}
+.empty-hand { color: #9a8fb5; }
+
+/* ---------- draft & end ---------- */
+.draft-slot { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.draft-slot .card { cursor: default; }
+.take-btn { font-size: 18px; padding: 10px 20px; }
+
+.scoreboard { display: flex; gap: 16px; margin: 10px 0 6px; }
+.scoreboard > div {
+  background: rgba(255,244,214,.06); border: 1px solid rgba(232,194,104,.35);
+  border-radius: 12px; padding: 14px 22px; text-align: center;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.scoreboard b { font-family: Georgia, serif; font-size: 32px; color: #f3ead2; }
+.scoreboard span { font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; color: #9a8fb5; }
+.scoreboard .score-total b { color: #e8c268; }
