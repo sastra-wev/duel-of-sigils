@@ -77,7 +77,7 @@ export function renderTitle(app, { onStart }) {
       <p>🏆 Clear all ${gauntletLength()} rungs to win. Fall once, and the run ends.</p>
     </div>
     <button class="big-btn" id="start-btn">Begin the Gauntlet</button>
-    <p class="hint">Mouse only — click a card to play it, click End Turn when you are done.</p>
+    <p class="hint">Click a card to play it. Click End Turn — or press Space — when you are done.</p>
   </section>`;
   app.querySelector('#start-btn').addEventListener('click', onStart);
 }
@@ -106,6 +106,7 @@ export function renderBattle(app, battle, { onPlayCard, onEndTurn, rung, muted, 
         <div class="intent">Next: <b>${foe.intent ? foe.intent.label : ''}</b> — ${intentSummary(battle)}</div>
         <div class="foe-sigil" style="--tint:${foe.def.tint}">${glyphSvg(foe.def.glyph, foe.def.tint, 120)}${events}</div>
         <h2 class="foe-name">${foe.def.name}</h2>
+        ${battle.turn === 1 ? `<p class="foe-intro">${foe.def.intro}</p>` : ''}
         ${hpBar(foe.hp, foe.maxHp, 'foe')}
         ${statusChips(foe)}
       </div>

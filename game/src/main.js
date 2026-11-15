@@ -53,6 +53,17 @@ function showBattle() {
   app.dataset.ready = '1';
 }
 
+// Space (or Enter) ends the turn from the keyboard, so a mouse-free rhythm
+// is possible once the cards are played. Only live on the battle screen.
+document.addEventListener('keydown', (event) => {
+  if (event.code !== 'Space' && event.code !== 'Enter') return;
+  const btn = app.querySelector('#end-turn');
+  if (btn && !btn.disabled) {
+    event.preventDefault();
+    btn.click();
+  }
+});
+
 function startDuel() {
   battle = createBattle({
     deckIds: run.deck, foeDef: enemyAt(run.rung), rng, playerHp: run.hp,

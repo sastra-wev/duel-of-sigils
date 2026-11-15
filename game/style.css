@@ -70,6 +70,7 @@ h1 {
   box-shadow: 0 0 34px -4px var(--tint, #888), inset 0 0 26px rgba(0,0,0,.55);
 }
 .foe-name, .player-name { font-family: Georgia, serif; font-size: 27px; margin: 2px 0 0; color: #f3ead2; }
+.foe-intro { margin: 0; max-width: 340px; text-align: center; font-size: 15px; font-style: italic; color: #b7ab90; }
 
 .hpbar {
   position: relative; width: 320px; height: 26px; border-radius: 7px;
