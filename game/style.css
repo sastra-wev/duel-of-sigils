@@ -155,6 +155,10 @@ h1 {
 .draft-slot { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .draft-slot .card { cursor: default; }
 .take-btn { font-size: 18px; padding: 10px 20px; }
+.draft-alt { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 22px; }
+.alt-btn { font-size: 16px; padding: 9px 18px; }
+.alt-btn:disabled { opacity: .45; cursor: default; }
+.alt-text { font-size: 13.5px; color: #9a8fb5; margin-bottom: 8px; }
 
 .scoreboard { display: flex; gap: 16px; margin: 10px 0 6px; }
 .scoreboard > div {

@@ -74,7 +74,23 @@ export const CARD_DEFS = {
     text: 'Deal 15 damage.',
     effects: { damage: 15 },
   },
+  // Tempered versions: the same sigil, honed after a victory. They only ever
+  // enter a deck through the draft's "temper" choice, never the card draft.
+  strike_plus: {
+    name: 'Tempered Strike', cost: 1, kind: 'attack', glyph: 'sword',
+    text: 'Deal 9 damage.',
+    effects: { damage: 9 },
+  },
+  guard_plus: {
+    name: 'Tempered Guard', cost: 1, kind: 'skill', glyph: 'shield',
+    text: 'Gain 8 Block. Block absorbs damage until your next turn.',
+    effects: { block: 8 },
+  },
 };
+
+// One temper per draft: a starter sigil in the deck is honed into its
+// tempered form. Strike is honed first; Guard if no Strike remains.
+export const UPGRADE_MAP = { strike: 'strike_plus', guard: 'guard_plus' };
 
 // The deck every run starts with: ten cards, no choices made yet.
 export const STARTER_DECK = [

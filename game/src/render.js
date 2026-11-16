@@ -30,6 +30,8 @@ const GLYPH_PATHS = {
   thorn: 'M24 42 V20 M24 20 C24 12 18 10 12 10 C12 18 17 22 24 20 M24 16 C24 9 30 6 36 7 C35 14 30 17 24 16 M14 30 l-6 2 M34 30 l6 2',
   herald: 'M10 30 L30 18 M30 18 a6 6 0 1 1 6 6 l-8 2 Z M12 30 v10 M8 40 h10',
   eater: 'M8 16 a16 16 0 1 1 0.1 0 M16 26 l4 6 4-6 4 6 4-6 M18 18 h.1 M30 18 h.1',
+  wisp: 'M24 6 C30 14 38 18 38 28 a14 14 0 0 1 -28 0 C10 20 18 14 24 6 Z M20 34 l4 5 4-5',
+  warden: 'M24 6 L40 12 V26 C40 34 32 40 24 42 C16 40 8 34 8 26 V12 Z M24 14 v16 M16 20 h16',
 };
 
 export function glyphSvg(glyph, color = 'currentColor', size = 44) {
@@ -73,7 +75,7 @@ export function renderTitle(app, { onStart }) {
     <div class="howto">
       <p>⚔ Each turn you get <b>3 Energy</b>. Play sigils to strike, block and hex.</p>
       <p>👁 The foe's next move is always shown — plan around it.</p>
-      <p>🂡 Win a duel, draft <b>1 of 3 new sigils</b> into your deck, and climb.</p>
+      <p>🂡 Win a duel, then choose: draft <b>1 of 3 new sigils</b>, temper a sigil you own, or mend <b>10 HP</b>.</p>
       <p>🏆 Clear all ${gauntletLength()} rungs to win. Fall once, and the run ends.</p>
     </div>
     <button class="big-btn" id="start-btn">Begin the Gauntlet</button>
@@ -132,18 +134,34 @@ export function renderBattle(app, battle, { onPlayCard, onEndTurn, rung, muted, 
   app.querySelector('#mute-btn').addEventListener('click', onToggleMute);
 }
 
-export function renderDraft(app, { choices, foeName, onPick }) {
+export function renderDraft(app, { choices, foeName, upgrade, canHeal, onPick, onUpgrade, onHeal }) {
+  const upgradeLabel = upgrade
+    ? `Temper ${cardDef(upgrade.from).name} → ${cardDef(upgrade.to).name}`
+    : 'Nothing left to temper';
+  const upgradeText = upgrade
+    ? `${cardDef(upgrade.from).text} becomes ${cardDef(upgrade.to).text}`
+    : 'Every temperable sigil in your deck is already honed.';
   app.innerHTML = `<section class="screen draft-screen">
     <h1>${foeName} falls.</h1>
-    <p class="tagline">The fallen foe's sigils scatter. Take <b>one</b> into your deck — it stays for every duel to come.</p>
+    <p class="tagline">The fallen foe's sigils scatter. Choose <b>one</b> reward — it stays for every duel to come.</p>
     <div class="draft-row">${choices.map((id) =>
       `<div class="draft-slot">${cardHtml(id, { playable: true })}<button class="big-btn take-btn" data-pick="${id}">Take ${cardDef(id).name}</button></div>`,
     ).join('')}</div>
+    <div class="draft-alt">
+      <button class="big-btn alt-btn" data-upgrade ${upgrade ? '' : 'disabled'}>${upgradeLabel}</button>
+      <span class="alt-text">${upgradeText}</span>
+      <button class="big-btn alt-btn" data-heal ${canHeal ? '' : 'disabled'}>Mend Wounds · +10 HP</button>
+      <span class="alt-text">Restore 10 HP before the next rung.</span>
+    </div>
     <p class="hint">Choose for the foes ahead, not the one behind you.</p>
   </section>`;
   app.querySelectorAll('[data-pick]').forEach((el) => {
     el.addEventListener('click', () => onPick(el.dataset.pick));
   });
+  const upBtn = app.querySelector('[data-upgrade]');
+  if (upBtn && onUpgrade) upBtn.addEventListener('click', onUpgrade);
+  const healBtn = app.querySelector('[data-heal]');
+  if (healBtn && onHeal) healBtn.addEventListener('click', onHeal);
 }
 
 export function renderEnd(app, { cleared, run, score, onRestart }) {

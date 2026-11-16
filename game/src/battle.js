@@ -77,7 +77,10 @@ export function intentSummary(battle) {
       ? `attacks for ${per} × ${intent.hits}`
       : `attacks for ${per}`;
   }
-  if (intent.block) return `gains ${intent.block} Block`;
+  if (intent.block) {
+    const thorns = intent.thorns ? ` and grows thorns (reflects ${intent.thorns})` : '';
+    return `gains ${intent.block} Block${thorns}`;
+  }
   if (intent.buff) return `grows stronger (+${intent.buff} damage)`;
   if (intent.thorns) return `grows thorns (reflects ${intent.thorns})`;
   if (intent.heal) return `feeds and heals ${intent.heal}`;

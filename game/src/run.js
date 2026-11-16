@@ -1,22 +1,25 @@
 // run.js — one run of the gauntlet: the deck you carry, the HP you keep
 // between duels, the rung you have reached, and the draft that follows each
-// victory. Winning a duel restores a little HP and offers three cards, of
-// which exactly one joins the deck — the run is a series of those choices,
-// so two runs with the same wins can arrive at the boss with different decks.
+// victory. The draft is a three-way choice now: take a new sigil, temper a
+// sigil you already own, or mend wounds — the run is a series of those
+// choices, so two runs with the same wins can arrive at the boss with
+// different decks, different tempered cards and different HP.
 
-import { STARTER_DECK, DRAFT_POOL } from './cards.js';
+import { STARTER_DECK, DRAFT_POOL, UPGRADE_MAP } from './cards.js';
 import { PLAYER_MAX_HP } from './battle.js';
-import { gauntletLength } from './enemies.js';
+import { gauntletLength, buildGauntlet } from './enemies.js';
 
 export const HEAL_AFTER_WIN = 6;
+export const HEAL_DRAFT = 10;
 
-export function createRun() {
+export function createRun(rng) {
   return {
     deck: [...STARTER_DECK],
     hp: PLAYER_MAX_HP,
     rung: 0,
     duelsWon: 0,
     draftsTaken: 0,
+    gauntlet: buildGauntlet(rng),
   };
 }
 
@@ -33,6 +36,31 @@ export function draftChoices(rng) {
 
 export function applyDraft(run, cardId) {
   run.deck.push(cardId);
+  run.draftsTaken += 1;
+}
+
+// The temper choice: hone the first upgradeable sigil in the deck into its
+// tempered form. Returns the { from, to } pair, or null when nothing in the
+// deck can be honed (a deck of only tempered and draft cards).
+export function upgradeOption(run) {
+  for (const from of Object.keys(UPGRADE_MAP)) {
+    if (run.deck.includes(from)) return { from, to: UPGRADE_MAP[from] };
+  }
+  return null;
+}
+
+export function applyUpgrade(run, fromId) {
+  const toId = UPGRADE_MAP[fromId];
+  const at = run.deck.indexOf(fromId);
+  if (!toId || at < 0) return false;
+  run.deck[at] = toId;
+  run.draftsTaken += 1;
+  return true;
+}
+
+// The mend choice: restore HP after a victory, capped at the maximum.
+export function applyHeal(run) {
+  run.hp = Math.min(PLAYER_MAX_HP, run.hp + HEAL_DRAFT);
   run.draftsTaken += 1;
 }
 

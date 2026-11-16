@@ -69,7 +69,51 @@ export const ENEMIES = [
       { label: 'Ward self', block: 14 },
     ],
   },
+  // V2 foes: they never appear as the boss, only as shuffled mid-gauntlet
+  // rungs, so no two runs climb the same ladder.
+  {
+    name: 'Cinder Wisp', glyph: 'wisp', hp: 30, tint: '#e88a4a',
+    intro: 'It burns bright and burns out — its flare hurts most when you let it build.',
+    intents: [
+      { label: 'Ember spit', hit: 6 },
+      { label: 'Flare', hit: 10, when: (foe) => foe.hp <= foe.maxHp / 2 },
+      { label: 'Kindle', buff: 2 },
+      { label: 'Ember spit', hit: 6 },
+    ],
+  },
+  {
+    name: 'Mirror Warden', glyph: 'warden', hp: 44, tint: '#a8b8d8',
+    intro: 'It answers every blow with a harder shell. Break the mirror in one big hit.',
+    intents: [
+      { label: 'Mirror edge', hit: 8 },
+      { label: 'Harden', block: 12 },
+      { label: 'Reflective ward', block: 8, thorns: 1 },
+      { label: 'Mirror edge', hit: 8 },
+    ],
+  },
 ];
+
+export const BOSS_NAME = 'Sigil Eater';
+export const OPENER_NAME = 'Hollow Imp';
+export const GAUNTLET_RUNGS = 6;
+
+// One run's gauntlet: the Hollow Imp always opens (the easy first lesson),
+// the Sigil Eater always closes, and the four middle rungs are four of the
+// six remaining foes, shuffled — so no two runs climb the same ladder, but
+// the difficulty curve never inverts. With no rng the classic order is kept,
+// so staged screenshots stay stable.
+export function buildGauntlet(rng) {
+  const boss = ENEMIES.find((foe) => foe.name === BOSS_NAME);
+  const opener = ENEMIES.find((foe) => foe.name === OPENER_NAME);
+  const rest = ENEMIES.filter((foe) => foe.name !== BOSS_NAME && foe.name !== OPENER_NAME);
+  if (!rng) return [opener, ...rest.slice(0, GAUNTLET_RUNGS - 2), boss];
+  const pile = [...rest];
+  for (let i = pile.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [pile[i], pile[j]] = [pile[j], pile[i]];
+  }
+  return [opener, ...pile.slice(0, GAUNTLET_RUNGS - 2), boss];
+}
 
 export function enemyAt(index) {
   const foe = ENEMIES[index];
@@ -78,5 +122,5 @@ export function enemyAt(index) {
 }
 
 export function gauntletLength() {
-  return ENEMIES.length;
+  return GAUNTLET_RUNGS;
 }

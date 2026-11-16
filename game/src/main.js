@@ -4,9 +4,8 @@
 // matching sound for what happened, and hands every finished state to
 // render.js. With ?shot=<screen> it stages that screen for screenshots.
 
-import { createBattle, playCard, endTurn } from './battle.js';
-import { createRun, draftChoices, applyDraft, recordWin, recordLoss, runCleared, finalScore } from './run.js';
-import { enemyAt } from './enemies.js';
+import { createBattle, playCard, endTurn, PLAYER_MAX_HP } from './battle.js';
+import { createRun, draftChoices, applyDraft, applyUpgrade, applyHeal, upgradeOption, recordWin, recordLoss, runCleared, finalScore } from './run.js';
 import { renderTitle, renderBattle, renderDraft, renderEnd } from './render.js';
 import { sfx, setMuted, isMuted } from './audio.js';
 import { mulberry32, stagedBattle, stagedDraft, stagedEnd } from './shots.js';
@@ -16,7 +15,7 @@ const params = new URLSearchParams(location.search);
 const seed = params.has('seed') ? Number(params.get('seed')) : (Date.now() % 2147483647);
 const rng = mulberry32(seed);
 
-let run = createRun();
+let run = createRun(rng);
 let battle = null;
 
 function showBattle() {
@@ -66,7 +65,7 @@ document.addEventListener('keydown', (event) => {
 
 function startDuel() {
   battle = createBattle({
-    deckIds: run.deck, foeDef: enemyAt(run.rung), rng, playerHp: run.hp,
+    deckIds: run.deck, foeDef: run.gauntlet[run.rung], rng, playerHp: run.hp,
   });
   sfx.draw();
   showBattle();
@@ -83,9 +82,23 @@ function winDuel() {
   const choices = draftChoices(rng);
   renderDraft(app, {
     choices, foeName,
+    upgrade: upgradeOption(run),
+    canHeal: run.hp < PLAYER_MAX_HP,
     onPick: (id) => {
       applyDraft(run, id);
       sfx.draft();
+      startDuel();
+    },
+    onUpgrade: () => {
+      const opt = upgradeOption(run);
+      if (opt && applyUpgrade(run, opt.from)) {
+        sfx.draft();
+        startDuel();
+      }
+    },
+    onHeal: () => {
+      applyHeal(run);
+      sfx.heal();
       startDuel();
     },
   });
@@ -101,14 +114,14 @@ function loseRun() {
 function showEnd(cleared) {
   renderEnd(app, {
     cleared, run, score: finalScore(run),
-    onRestart: () => { run = createRun(); sfx.click(); startDuel(); },
+    onRestart: () => { run = createRun(rng); sfx.click(); startDuel(); },
   });
   app.dataset.ready = '1';
 }
 
 function showTitle() {
   renderTitle(app, {
-    onStart: () => { run = createRun(); sfx.draft(); startDuel(); },
+    onStart: () => { run = createRun(rng); sfx.draft(); startDuel(); },
   });
   app.dataset.ready = '1';
 }
@@ -126,7 +139,8 @@ if (shot === 'battle') {
   run = staged.run;
   renderDraft(app, {
     choices: staged.choices, foeName: staged.foeName,
-    onPick: () => {},
+    upgrade: staged.upgrade, canHeal: staged.canHeal,
+    onPick: () => {}, onUpgrade: () => {}, onHeal: () => {},
   });
   app.dataset.ready = '1';
 } else if (shot === 'end') {

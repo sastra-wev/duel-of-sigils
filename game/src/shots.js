@@ -45,7 +45,10 @@ export function stagedDraft() {
   run.rung = 2;
   run.duelsWon = 2;
   run.hp = 31;
-  return { run, choices: ['bulwark', 'siphon', 'twinfang'], foeName: enemyAt(1).name };
+  return {
+    run, choices: ['bulwark', 'siphon', 'twinfang'], foeName: enemyAt(1).name,
+    upgrade: { from: 'strike', to: 'strike_plus' }, canHeal: true,
+  };
 }
 
 export function stagedEnd() {
