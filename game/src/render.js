@@ -32,6 +32,7 @@ const GLYPH_PATHS = {
   eater: 'M8 16 a16 16 0 1 1 0.1 0 M16 26 l4 6 4-6 4 6 4-6 M18 18 h.1 M30 18 h.1',
   wisp: 'M24 6 C30 14 38 18 38 28 a14 14 0 0 1 -28 0 C10 20 18 14 24 6 Z M20 34 l4 5 4-5',
   warden: 'M24 6 L40 12 V26 C40 34 32 40 24 42 C16 40 8 34 8 26 V12 Z M24 14 v16 M16 20 h16',
+  bell: 'M24 6 C14 6 10 15 10 26 v6 l-4 6 h36 l-4 -6 v-6 C38 15 34 6 24 6 Z M20 42 a4 4 0 0 0 8 0 M24 6 v4',
 };
 
 export function glyphSvg(glyph, color = 'currentColor', size = 44) {
@@ -96,6 +97,10 @@ export function renderBattle(app, battle, { onPlayCard, onEndTurn, rung, muted, 
       const sign = e.type === 'heal' || e.type === 'foeHeal' ? '+' : '−';
       return `<span class="float ${who} ${sign === '+' ? 'good' : 'bad'}">${sign}${e.amount}</span>`;
     }).join('');
+  // A fresh hit replays its shake: the screen is re-rendered after every
+  // action, so the class lands on a brand-new node each time.
+  const foeHit = battle.lastEvents.some((e) => e.type === 'foeHit') ? ' hit' : '';
+  const playerHit = battle.lastEvents.some((e) => e.type === 'playerHit') ? ' hit' : '';
 
   app.innerHTML = `<section class="screen battle-screen">
     <header class="topbar">
@@ -106,14 +111,14 @@ export function renderBattle(app, battle, { onPlayCard, onEndTurn, rung, muted, 
     <div class="arena">
       <div class="foe-zone">
         <div class="intent">Next: <b>${foe.intent ? foe.intent.label : ''}</b> — ${intentSummary(battle)}</div>
-        <div class="foe-sigil" style="--tint:${foe.def.tint}">${glyphSvg(foe.def.glyph, foe.def.tint, 120)}${events}</div>
+        <div class="foe-sigil${foeHit}" style="--tint:${foe.def.tint}">${glyphSvg(foe.def.glyph, foe.def.tint, 120)}${events}</div>
         <h2 class="foe-name">${foe.def.name}</h2>
         ${battle.turn === 1 ? `<p class="foe-intro">${foe.def.intro}</p>` : ''}
         ${hpBar(foe.hp, foe.maxHp, 'foe')}
         ${statusChips(foe)}
       </div>
       <div class="versus">⚔</div>
-      <div class="player-zone">
+      <div class="player-zone${playerHit}">
         <h2 class="player-name">The Challenger</h2>
         ${hpBar(player.hp, player.maxHp, 'player')}
         ${statusChips(player)}
@@ -165,6 +170,11 @@ export function renderDraft(app, { choices, foeName, upgrade, canHeal, onPick, o
 }
 
 export function renderEnd(app, { cleared, run, score, onRestart }) {
+  const stats = run.stats || { damageDealt: 0, cardsPlayed: 0, turns: 0, blocked: 0 };
+  const foes = run.foesBeaten || [];
+  const chronicle = foes.length
+    ? `<p class="chronicle-foes">Fallen: ${foes.join(' · ')}</p>`
+    : '<p class="chronicle-foes">No foe fell this run.</p>';
   app.innerHTML = `<section class="screen end-screen">
     <div class="title-sigil">${glyphSvg(cleared ? 'sun' : 'moon', cleared ? '#e8c268' : '#8d86a8', 84)}</div>
     <h1>${cleared ? 'THE GAUNTLET FALLS' : 'THE SIGILS GO DARK'}</h1>
@@ -176,6 +186,11 @@ export function renderEnd(app, { cleared, run, score, onRestart }) {
       <div><b>${run.hp}</b><span>HP left</span></div>
       <div><b>${run.deck.length}</b><span>cards in deck</span></div>
       <div class="score-total"><b>${score}</b><span>SCORE</span></div>
+    </div>
+    <div class="chronicle">
+      <h3>THE RUN, TOLD BACK</h3>
+      ${chronicle}
+      <p class="chronicle-stats">${stats.turns} turns · ${stats.damageDealt} damage dealt · ${stats.cardsPlayed} sigils played · ${stats.blocked} damage blocked</p>
     </div>
     <button class="big-btn" id="restart-btn">Duel Again</button>
   </section>`;

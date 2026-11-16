@@ -41,6 +41,8 @@ export function createBattle({ deckIds, foeDef, rng, playerHp }) {
     discardPile: [],
     log: [],
     lastEvents: [],
+    // Run-chronicle counters, merged into the run when the duel ends.
+    stats: { damageDealt: 0, cardsPlayed: 0, turns: 0, blocked: 0 },
   };
   rollIntent(battle);
   startPlayerTurn(battle, true);
@@ -73,9 +75,10 @@ export function intentSummary(battle) {
   if (!intent) return '';
   if (intent.hit) {
     const per = intent.hit + buff;
-    return intent.hits && intent.hits > 1
+    const base = intent.hits && intent.hits > 1
       ? `attacks for ${per} × ${intent.hits}`
       : `attacks for ${per}`;
+    return intent.weak ? `${base} and weakens you for ${intent.weak} turn${intent.weak > 1 ? 's' : ''}` : base;
   }
   if (intent.block) {
     const thorns = intent.thorns ? ` and grows thorns (reflects ${intent.thorns})` : '';
@@ -90,6 +93,7 @@ export function intentSummary(battle) {
 
 function startPlayerTurn(battle, opening = false) {
   battle.turn += 1;
+  battle.stats.turns = battle.turn;
   battle.player.block = 0;
   battle.player.energy = BASE_ENERGY;
   drawCards(battle, opening ? OPENING_HAND : DRAW_PER_TURN);
@@ -134,6 +138,7 @@ export function playCard(battle, handIndex) {
   battle.discardPile.push(id);
 
   const fx = def.effects;
+  battle.stats.cardsPlayed += 1;
   if (fx.damage) {
     const hits = fx.hits || 1;
     for (let h = 0; h < hits; h++) dealDamageToFoe(battle, fx.damage, events);
@@ -158,6 +163,9 @@ export function playCard(battle, handIndex) {
   if (fx.energy) battle.player.energy += fx.energy;
   if (fx.draw) drawCards(battle, fx.draw);
 
+  for (const e of events) {
+    if (e.type === 'foeHit') battle.stats.damageDealt += e.amount;
+  }
   battle.lastEvents = events;
   if (battle.foe.hp <= 0) battle.phase = 'won';
   else if (battle.player.hp <= 0) battle.phase = 'lost';
@@ -178,7 +186,10 @@ function foeAct(battle, events) {
         const absorbed = Math.min(battle.player.block, remaining);
         battle.player.block -= absorbed;
         remaining -= absorbed;
-        if (absorbed > 0) events.push({ type: 'playerBlocked', amount: absorbed });
+        if (absorbed > 0) {
+          battle.stats.blocked += absorbed;
+          events.push({ type: 'playerBlocked', amount: absorbed });
+        }
       }
       if (remaining > 0) {
         battle.player.hp = Math.max(0, battle.player.hp - remaining);

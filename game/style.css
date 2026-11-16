@@ -69,6 +69,17 @@ h1 {
   border: 3px solid var(--tint, #888);
   box-shadow: 0 0 34px -4px var(--tint, #888), inset 0 0 26px rgba(0,0,0,.55);
 }
+/* A blow just landed: one short shake, then stillness. The node is rebuilt
+   on every render, so the shake replays with each fresh hit. */
+.foe-sigil.hit { animation: hitShake .32s ease-out; }
+.player-zone.hit { animation: hitShake .32s ease-out; }
+@keyframes hitShake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-7px); }
+  55% { transform: translateX(6px); }
+  80% { transform: translateX(-3px); }
+  100% { transform: translateX(0); }
+}
 .foe-name, .player-name { font-family: Georgia, serif; font-size: 27px; margin: 2px 0 0; color: #f3ead2; }
 .foe-intro { margin: 0; max-width: 340px; text-align: center; font-size: 15px; font-style: italic; color: #b7ab90; }
 
@@ -169,3 +180,14 @@ h1 {
 .scoreboard b { font-family: Georgia, serif; font-size: 32px; color: #f3ead2; }
 .scoreboard span { font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; color: #9a8fb5; }
 .scoreboard .score-total b { color: #e8c268; }
+
+.chronicle {
+  background: rgba(255,244,214,.06); border: 1px solid rgba(232,194,104,.35);
+  border-radius: 12px; padding: 12px 26px; max-width: 640px; text-align: center;
+}
+.chronicle h3 {
+  font-family: Georgia, serif; font-size: 15px; letter-spacing: 3px;
+  color: #e8c268; margin: 2px 0 6px;
+}
+.chronicle-foes { margin: 4px 0; font-size: 17px; color: #e6dcc2; }
+.chronicle-stats { margin: 4px 0 2px; font-size: 15px; color: #9a8fb5; }

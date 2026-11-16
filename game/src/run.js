@@ -20,7 +20,21 @@ export function createRun(rng) {
     duelsWon: 0,
     draftsTaken: 0,
     gauntlet: buildGauntlet(rng),
+    // The run chronicle: every duel's toll, told on the end screen.
+    stats: { damageDealt: 0, cardsPlayed: 0, turns: 0, blocked: 0 },
+    foesBeaten: [],
   };
+}
+
+// Fold one finished duel's counters into the run chronicle. Called on both
+// a win and a loss, so a fallen run still tells the whole story.
+export function recordBattleStats(run, battle) {
+  if (!battle || !battle.stats) return;
+  run.stats.damageDealt += battle.stats.damageDealt;
+  run.stats.cardsPlayed += battle.stats.cardsPlayed;
+  run.stats.turns += battle.stats.turns;
+  run.stats.blocked += battle.stats.blocked;
+  if (battle.phase === 'won') run.foesBeaten.push(battle.foe.def.name);
 }
 
 // Three distinct cards from the draft pool, drawn with the run's rng.

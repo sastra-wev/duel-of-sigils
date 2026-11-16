@@ -5,7 +5,7 @@
 // render.js. With ?shot=<screen> it stages that screen for screenshots.
 
 import { createBattle, playCard, endTurn, PLAYER_MAX_HP } from './battle.js';
-import { createRun, draftChoices, applyDraft, applyUpgrade, applyHeal, upgradeOption, recordWin, recordLoss, runCleared, finalScore } from './run.js';
+import { createRun, draftChoices, applyDraft, applyUpgrade, applyHeal, upgradeOption, recordWin, recordLoss, recordBattleStats, runCleared, finalScore } from './run.js';
 import { renderTitle, renderBattle, renderDraft, renderEnd } from './render.js';
 import { sfx, setMuted, isMuted } from './audio.js';
 import { mulberry32, stagedBattle, stagedDraft, stagedEnd } from './shots.js';
@@ -73,6 +73,7 @@ function startDuel() {
 
 function winDuel() {
   const foeName = battle.foe.def.name;
+  recordBattleStats(run, battle);
   recordWin(run, battle.player.hp);
   if (runCleared(run)) {
     sfx.win();
@@ -106,6 +107,7 @@ function winDuel() {
 }
 
 function loseRun() {
+  recordBattleStats(run, battle);
   recordLoss(run, battle.player.hp);
   sfx.lose();
   showEnd(false);

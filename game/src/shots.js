@@ -58,5 +58,7 @@ export function stagedEnd() {
   run.draftsTaken = 5;
   run.hp = 18;
   run.deck = [...run.deck, 'heavy', 'hexmark', 'bulwark', 'siphon', 'lastlight'];
+  run.stats = { damageDealt: 214, cardsPlayed: 47, turns: 29, blocked: 63 };
+  run.foesBeaten = ['Hollow Imp', 'Ash Hound', 'Gloom Scribe', 'Thorn Revenant', 'The Pale Herald', 'Sigil Eater'];
   return { run, cleared: true };
 }

@@ -1,4 +1,4 @@
-// enemies.js — the gauntlet: six foes of rising strength, each a name, a sigil
+// enemies.js — the gauntlet: nine foes of rising strength, each a name, a sigil
 // glyph, hit points and a small table of intents. An intent is what the foe
 // will do on its turn, shown to the player in advance so every player turn is
 // a real decision: spend the turn killing, blocking, or setting up.
@@ -89,6 +89,16 @@ export const ENEMIES = [
       { label: 'Harden', block: 12 },
       { label: 'Reflective ward', block: 8, thorns: 1 },
       { label: 'Mirror edge', hit: 8 },
+    ],
+  },
+  {
+    name: 'Grave Bell', glyph: 'bell', hp: 40, tint: '#c9b8e8',
+    intro: 'Each toll dulls your sigils and steadies its own. Silence it before the third ring.',
+    intents: [
+      { label: 'Toll', hit: 5, weak: 1 },
+      { label: 'Heavy toll', hit: 10, when: (foe) => foe.hp <= foe.maxHp / 2 },
+      { label: 'Mend the crack', heal: 8 },
+      { label: 'Iron ward', block: 8 },
     ],
   },
 ];
