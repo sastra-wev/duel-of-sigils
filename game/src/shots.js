@@ -6,7 +6,7 @@
 
 import { createBattle } from './battle.js';
 import { createRun } from './run.js';
-import { enemyAt } from './enemies.js';
+import { enemyAt, enemyByName, makeElite } from './enemies.js';
 
 export function mulberry32(seed) {
   let a = seed >>> 0;
@@ -18,23 +18,28 @@ export function mulberry32(seed) {
   };
 }
 
-// A duel against the Gloom Scribe, a few turns in: the foe is bloodied and
-// about to lash out, the player holds a real choice of cards and 2 energy.
+// The fifth rung: an Elite Mirror Warden, crowned and hardened, the player
+// mid-run with a drafted deck, a relic on the wrist and a real choice of
+// cards in hand — the whole game in one frame.
 export function stagedBattle() {
   const rng = mulberry32(20261116);
   const run = createRun();
-  run.rung = 2;
-  run.duelsWon = 2;
+  run.rung = 4;
+  run.duelsWon = 4;
   run.hp = 27;
-  run.deck = [...run.deck, 'heavy', 'hexmark'];
+  run.deck = [...run.deck, 'heavy', 'hexmark', 'bramble'];
+  run.relics = ['thorncrown'];
   const battle = createBattle({
-    deckIds: run.deck, foeDef: enemyAt(2), rng, playerHp: 27,
+    deckIds: run.deck, foeDef: makeElite(enemyByName('Mirror Warden')),
+    rng, playerHp: 27, relics: run.relics,
   });
   battle.turn = 3;
-  battle.foe.hp = 19;
-  battle.foe.intent = enemyAt(2).intents[0]; // Ink lash, 8
+  battle.foe.hp = 31;
+  battle.foe.block = 8;
+  battle.foe.intent = enemyByName('Mirror Warden').intents[0]; // Mirror edge, 8
   battle.player.energy = 2;
   battle.player.block = 5;
+  battle.player.thorns = 1;
   battle.hand = ['heavy', 'guard', 'hexmark', 'spark'];
   battle.lastEvents = [{ type: 'foeHit', amount: 9 }];
   return { run, battle };
@@ -46,8 +51,8 @@ export function stagedDraft() {
   run.duelsWon = 2;
   run.hp = 31;
   return {
-    run, choices: ['bulwark', 'siphon', 'twinfang'], foeName: enemyAt(1).name,
-    upgrade: { from: 'strike', to: 'strike_plus' }, canHeal: true,
+    run, choices: ['bulwark', 'executioner', 'soulburn'], foeName: enemyAt(1).name,
+    upgrade: { from: 'strike', to: 'strike_plus' }, relic: 'whetstone', canHeal: true,
   };
 }
 
@@ -57,8 +62,9 @@ export function stagedEnd() {
   run.duelsWon = 6;
   run.draftsTaken = 5;
   run.hp = 18;
-  run.deck = [...run.deck, 'heavy', 'hexmark', 'bulwark', 'siphon', 'lastlight'];
-  run.stats = { damageDealt: 214, cardsPlayed: 47, turns: 29, blocked: 63 };
-  run.foesBeaten = ['Hollow Imp', 'Ash Hound', 'Gloom Scribe', 'Thorn Revenant', 'The Pale Herald', 'Sigil Eater'];
+  run.deck = [...run.deck, 'heavy', 'hexmark', 'bulwark', 'executioner', 'lastlight'];
+  run.relics = ['whetstone', 'emberheart'];
+  run.stats = { damageDealt: 268, cardsPlayed: 52, turns: 33, blocked: 71 };
+  run.foesBeaten = ['Hollow Imp', 'Ash Hound', 'Gloom Scribe', 'Thorn Revenant', 'Elite Mirror Warden', 'The Sigil Sovereign'];
   return { run, cleared: true };
 }

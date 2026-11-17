@@ -2,14 +2,17 @@
 // them. Pure state and transitions; render.js draws whatever this holds and
 // main.js feeds it clicks. Every number the player can see is derived here:
 // damage after Vulnerable, the Weak discount, Block absorbing hits in order,
-// thorns answering attacks. Randomness comes from the seeded rng handed in at
-// creation, so a staged screenshot battle is the same battle every time.
+// thorns answering attacks, Burn ticking through Block, Strength lifting
+// every hit, and the Sigil Sovereign's crown breaking at half strength.
+// Randomness comes from the seeded rng handed in at creation, so a staged
+// screenshot battle is the same battle every time.
 
 import { cardDef } from './cards.js';
+import { hasRelic } from './relics.js';
 
 export const PLAYER_MAX_HP = 40;
 export const BASE_ENERGY = 3;
-export const OPENING_HAND = 4;
+export const OPENING_HAND = 5;
 export const DRAW_PER_TURN = 2;
 export const HAND_LIMIT = 8;
 
@@ -22,18 +25,21 @@ function shuffle(ids, rng) {
   return pile;
 }
 
-export function createBattle({ deckIds, foeDef, rng, playerHp }) {
+export function createBattle({ deckIds, foeDef, rng, playerHp, relics = [] }) {
   const battle = {
     rng,
+    relics,
     turn: 0,
     phase: 'player', // 'player' | 'won' | 'lost'
     player: {
       hp: playerHp, maxHp: PLAYER_MAX_HP,
-      block: 0, energy: 0, weak: 0,
+      block: 0, energy: 0, weak: 0, strength: 0, thorns: 0,
     },
     foe: {
       def: foeDef, hp: foeDef.hp, maxHp: foeDef.hp,
-      block: 0, buff: 0, thorns: 0, vulnerable: 0, weak: 0,
+      block: 0, buff: foeDef.startBuff || 0, thorns: 0, vulnerable: 0, weak: 0,
+      burn: 0, burnTurns: 0,
+      table: foeDef.intents, phase2: false,
       intent: null,
     },
     drawPile: shuffle(deckIds, rng),
@@ -46,6 +52,13 @@ export function createBattle({ deckIds, foeDef, rng, playerHp }) {
   };
   rollIntent(battle);
   startPlayerTurn(battle, true);
+  // Relics that greet you at the table: the Bulwark Charm's raised Block,
+  // the Thorn Crown's answering spikes, the Golden Web's extra Energy and
+  // the Hourglass's deeper first hand.
+  if (hasRelic(relics, 'bulwarkcharm')) battle.player.block += 6;
+  if (hasRelic(relics, 'thorncrown')) battle.player.thorns += 1;
+  if (hasRelic(relics, 'goldenweb')) battle.player.energy += 1;
+  if (hasRelic(relics, 'hourglass')) drawCards(battle, 2);
   return battle;
 }
 
@@ -61,7 +74,7 @@ function drawCards(battle, count) {
 }
 
 function rollIntent(battle) {
-  const table = battle.foe.def.intents.filter(
+  const table = battle.foe.table.filter(
     (intent) => !intent.when || intent.when(battle.foe),
   );
   const pick = table[Math.floor(battle.rng() * table.length)];
@@ -91,6 +104,17 @@ export function intentSummary(battle) {
   return '';
 }
 
+// The total damage the telegraphed intent would deal right now, before
+// Block and before the foe's own Weak — the number a player (or a tutorial
+// hint) weighs against their Block and HP.
+export function incomingDamage(battle) {
+  const intent = battle.foe.intent;
+  if (!intent || !intent.hit) return 0;
+  let per = intent.hit + battle.foe.buff;
+  if (battle.foe.weak > 0) per = Math.floor(per * 0.75);
+  return per * (intent.hits || 1);
+}
+
 function startPlayerTurn(battle, opening = false) {
   battle.turn += 1;
   battle.stats.turns = battle.turn;
@@ -107,8 +131,29 @@ export function canPlay(battle, handIndex) {
   return cardDef(id).cost <= battle.player.energy;
 }
 
+// The crown breaks: at half strength the Sigil Sovereign sheds the player's
+// hexes, gains Strength, and its phase-two table takes over. Called after
+// every change to the foe's HP, so the shift lands the moment the threshold
+// is crossed — and the new intent is telegraphed like any other.
+function checkPhaseShift(battle, events) {
+  const foe = battle.foe;
+  const phase2 = foe.def.phase2;
+  if (!phase2 || foe.phase2 || foe.hp <= 0) return;
+  if (foe.hp > foe.maxHp * phase2.atFraction) return;
+  foe.phase2 = true;
+  foe.vulnerable = 0;
+  foe.weak = 0;
+  foe.burn = 0;
+  foe.burnTurns = 0;
+  foe.buff += phase2.buff;
+  foe.table = phase2.intents;
+  rollIntent(battle);
+  events.push({ type: 'phaseShift', banner: phase2.banner, intro: phase2.intro });
+}
+
 function dealDamageToFoe(battle, base, events) {
-  let amount = base;
+  let amount = base + battle.player.strength;
+  if (hasRelic(battle.relics, 'whetstone')) amount += 1;
   if (battle.foe.vulnerable > 0) amount = Math.floor(amount * 1.5);
   if (battle.player.weak > 0) amount = Math.floor(amount * 0.75);
   let remaining = amount;
@@ -126,6 +171,16 @@ function dealDamageToFoe(battle, base, events) {
     battle.player.hp = Math.max(0, battle.player.hp - battle.foe.thorns);
     events.push({ type: 'thorns', amount: battle.foe.thorns });
   }
+  checkPhaseShift(battle, events);
+}
+
+// Direct damage that ignores Block: Burn ticking, and the player's own
+// Thorns answering a foe's blow. Still counts toward the chronicle.
+function dealDirectDamageToFoe(battle, amount, type, events) {
+  if (amount <= 0 || battle.foe.hp <= 0) return;
+  battle.foe.hp = Math.max(0, battle.foe.hp - amount);
+  events.push({ type, amount });
+  checkPhaseShift(battle, events);
 }
 
 export function playCard(battle, handIndex) {
@@ -140,17 +195,33 @@ export function playCard(battle, handIndex) {
   const fx = def.effects;
   battle.stats.cardsPlayed += 1;
   if (fx.damage) {
+    const bonus = fx.bonusVsVulnerable && battle.foe.vulnerable > 0
+      ? fx.bonusVsVulnerable
+      : 0;
     const hits = fx.hits || 1;
-    for (let h = 0; h < hits; h++) dealDamageToFoe(battle, fx.damage, events);
+    for (let h = 0; h < hits; h++) dealDamageToFoe(battle, fx.damage + bonus, events);
   }
   if (fx.block) {
     battle.player.block += fx.block;
     events.push({ type: 'block', amount: fx.block });
   }
+  if (fx.thorns) {
+    battle.player.thorns += fx.thorns;
+    events.push({ type: 'playerThornsUp', amount: fx.thorns });
+  }
+  if (fx.strength) {
+    battle.player.strength += fx.strength;
+    events.push({ type: 'strength', amount: fx.strength });
+  }
   if (fx.heal) {
     const healed = Math.min(battle.player.maxHp - battle.player.hp, fx.heal);
     battle.player.hp += healed;
     if (healed > 0) events.push({ type: 'heal', amount: healed });
+  }
+  if (fx.selfDamage) {
+    // A price, never a executioner: Blood Price cannot drop you below 1 HP.
+    battle.player.hp = Math.max(1, battle.player.hp - fx.selfDamage);
+    events.push({ type: 'selfDamage', amount: fx.selfDamage });
   }
   if (fx.vulnerable) {
     battle.foe.vulnerable = Math.max(battle.foe.vulnerable, fx.vulnerable);
@@ -159,6 +230,11 @@ export function playCard(battle, handIndex) {
   if (fx.weak) {
     battle.foe.weak = Math.max(battle.foe.weak, fx.weak);
     events.push({ type: 'weakFoe', turns: fx.weak });
+  }
+  if (fx.burn) {
+    battle.foe.burn = Math.max(battle.foe.burn, fx.burn);
+    battle.foe.burnTurns = Math.max(battle.foe.burnTurns, fx.burnTurns || 1);
+    events.push({ type: 'burn', amount: fx.burn, turns: battle.foe.burnTurns });
   }
   if (fx.energy) battle.player.energy += fx.energy;
   if (fx.draw) drawCards(battle, fx.draw);
@@ -174,6 +250,13 @@ export function playCard(battle, handIndex) {
 
 function foeAct(battle, events) {
   const foe = battle.foe;
+  // Burn bites first, through Block, before the foe can move — a branded
+  // foe can die on its own doorstep, and the duel ends there.
+  if (foe.burnTurns > 0 && foe.burn > 0) {
+    foe.burnTurns -= 1;
+    dealDirectDamageToFoe(battle, foe.burn, 'foeBurn', events);
+    if (foe.hp <= 0) return;
+  }
   const intent = foe.intent;
   if (!intent) return;
   if (intent.hit) {
@@ -194,6 +277,11 @@ function foeAct(battle, events) {
       if (remaining > 0) {
         battle.player.hp = Math.max(0, battle.player.hp - remaining);
         events.push({ type: 'playerHit', amount: remaining });
+      }
+      // Your own Thorns answer every blow that lands, blocked or not.
+      if (battle.player.thorns > 0 && amount > 0) {
+        dealDirectDamageToFoe(battle, battle.player.thorns, 'foeThornsHit', events);
+        if (foe.hp <= 0) return;
       }
       if (battle.player.hp <= 0) return;
     }
@@ -231,13 +319,21 @@ export function endTurn(battle) {
   if (battle.phase !== 'player') return;
   const events = [{ type: 'foeAct', label: battle.foe.intent?.label || '' }];
   foeAct(battle, events);
+  for (const e of events) {
+    if (e.type === 'foeBurn' || e.type === 'foeThornsHit') {
+      battle.stats.damageDealt += e.amount;
+    }
+  }
+  battle.lastEvents = events;
+  if (battle.foe.hp <= 0) {
+    battle.phase = 'won';
+    return;
+  }
   if (battle.player.hp <= 0) {
     battle.phase = 'lost';
-    battle.lastEvents = events;
     return;
   }
   tickStatuses(battle);
   rollIntent(battle);
-  battle.lastEvents = events;
   startPlayerTurn(battle);
 }

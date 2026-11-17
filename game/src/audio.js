@@ -2,7 +2,9 @@
 // moment it is needed: no audio files, nothing to load, nothing fetched. One
 // shared AudioContext, created lazily on the first user gesture (browsers
 // refuse sound before one). The mute toggle lives here so every caller can
-// stay ignorant of it.
+// stay ignorant of it. Each foe family gets its own voice — a hit on bark is
+// not a hit on glass — and the boss gets two: a crown of bright metal, and
+// the lower thing underneath it.
 
 let ctx = null;
 let muted = false;
@@ -73,6 +75,19 @@ export const sfx = {
   blocked() { tone(240, 0.1, 'square', 0.06); noise(0.06, 0.06, 0, 1800); },
   hurt() { tone(140, 0.2, 'sawtooth', 0.1, 0, 60); },
   heal() { tone(440, 0.12, 'sine', 0.08); tone(660, 0.16, 'sine', 0.08, 0.08); },
+  thornsHit() { tone(880, 0.07, 'square', 0.05); tone(1174, 0.09, 'square', 0.04, 0.05); },
+  burn() { noise(0.22, 0.09, 0, 3000); tone(196, 0.24, 'sawtooth', 0.05, 0, 98); },
+  strength() { tone(262, 0.12, 'triangle', 0.09); tone(392, 0.16, 'triangle', 0.09, 0.09); },
+  relic() { [659, 784, 988, 1319].forEach((f, i) => tone(f, 0.18, 'sine', 0.08, i * 0.07)); },
+  elite() { tone(110, 0.3, 'sawtooth', 0.1, 0, 55); tone(220, 0.2, 'square', 0.05, 0.05); },
+  // The crown breaks: bright metal snapping, then the low thing underneath.
+  phaseShift() {
+    tone(1568, 0.1, 'square', 0.07);
+    tone(1175, 0.14, 'square', 0.06, 0.08);
+    noise(0.3, 0.12, 0.1, 900);
+    tone(73, 0.7, 'sawtooth', 0.13, 0.18, 49);
+    tone(110, 0.5, 'triangle', 0.1, 0.24, 73);
+  },
   foeDown() { tone(392, 0.14, 'triangle', 0.12); tone(523, 0.14, 'triangle', 0.12, 0.12); tone(659, 0.22, 'triangle', 0.12, 0.24); },
   draft() { tone(523, 0.1, 'sine', 0.09); tone(784, 0.18, 'sine', 0.09, 0.09); },
   win() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.24, 'triangle', 0.11, i * 0.13)); },
